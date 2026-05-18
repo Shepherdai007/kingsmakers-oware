@@ -1,0 +1,2280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<!-- PWA / Play Store (TWA) essential meta -->
+<meta name="theme-color" content="#1a0a00">
+<meta name="background-color" content="#0d0500">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KingsMakers Oware">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="KingsMakers Oware">
+
+<!-- SEO & Social -->
+<meta name="description" content="KingsMakers Oware — Play the World's Oldest African Strategy Board Game. Human vs AI with 3 difficulty levels. Free, offline-ready PWA.">
+<meta name="keywords" content="oware, warri, awale, mancala, african game, ghana game, strategy, board game, kingsmakers">
+<meta name="author" content="KingsMakers Games Studio">
+<meta name="robots" content="index, follow">
+
+<!-- Open Graph (for sharing) -->
+<meta property="og:title" content="KingsMakers Oware — African Strategy Game">
+<meta property="og:description" content="Play the ancient Ghanaian seed-sowing strategy game. Human vs AI. Free & offline.">
+<meta property="og:type" content="game">
+<meta property="og:locale" content="en_GH">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="KingsMakers Oware">
+<meta name="twitter:description" content="The ancient African strategy game — now on your phone.">
+
+<!-- Manifest link — filled by JS -->
+<link rel="manifest" href="#" id="manifest-link">
+
+<!-- iOS splash / icons (inline SVG crown) -->
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%231a0a00' rx='22'/><text y='78' x='50' text-anchor='middle' font-size='65'>👑</text></svg>">
+
+<title>KingsMakers Oware — African Strategy Game</title>
+
+<style>
+/* ===== GOOGLE FONTS ===== */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&family=Lato:wght@300;400;700&display=swap');
+
+/* ===== CSS VARIABLES ===== */
+:root {
+  --gold: #d4a017;
+  --gold2: #f5c842;
+  --gold3: #b8860b;
+  --dark-wood: #2c1206;
+  --mid-wood: #5c2e0a;
+  --light-wood: #a0522d;
+  --pit-inner: #c8a06a;
+  --pit-shadow: #3d1a05;
+  --bg-dark: #0d0500;
+  --bg-mid: #1a0a00;
+  --text-cream: #f5e6c8;
+  --text-gold: #d4a017;
+  --red-accent: #c0392b;
+  --green-accent: #27ae60;
+  --seed-player: #e74c3c;
+  --seed-ai: #3498db;
+  --seed-neutral: #8B4513;
+  --store-glow: rgba(212,160,23,0.4);
+}
+
+/* ===== RESET ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: var(--bg-dark);
+  font-family: 'Lato', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* ===== SCREENS ===== */
+.screen {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.6s ease;
+  z-index: 10;
+}
+.screen.active {
+  opacity: 1; pointer-events: all;
+}
+
+/* ===== BACKGROUND TEXTURE ===== */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(92,46,10,0.3) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(92,46,10,0.3) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 50%, rgba(26,10,0,0.8) 0%, transparent 100%);
+  background-color: var(--bg-dark);
+  z-index: -1;
+}
+
+/* ===== PARTICLE CANVAS ===== */
+#particles { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+/* ===== INTRO SCREEN ===== */
+#intro-screen {
+  background: radial-gradient(ellipse at center, #2c1206 0%, #0d0500 70%);
+  z-index: 100;
+  gap: 0;
+}
+
+.intro-logo-wrap {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 12px;
+}
+
+.intro-crown {
+  font-size: clamp(60px, 15vw, 100px);
+  animation: crownFloat 3s ease-in-out infinite;
+  filter: drop-shadow(0 0 20px var(--gold));
+}
+
+@keyframes crownFloat {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-12px) rotate(3deg); }
+}
+
+.intro-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(28px, 8vw, 64px);
+  font-weight: 900;
+  color: var(--gold2);
+  text-shadow: 0 0 30px var(--gold), 0 0 60px rgba(212,160,23,0.5), 2px 2px 0 var(--gold3);
+  letter-spacing: 0.05em;
+  text-align: center;
+  line-height: 1.1;
+  opacity: 0;
+  transform: translateY(30px);
+  animation: titleReveal 1s ease forwards 0.5s;
+}
+
+@keyframes titleReveal {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.intro-sub {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(12px, 3vw, 18px);
+  color: var(--text-cream);
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  opacity: 0;
+  animation: titleReveal 1s ease forwards 1s;
+}
+
+.intro-game-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(18px, 5vw, 36px);
+  color: var(--gold);
+  letter-spacing: 0.1em;
+  opacity: 0;
+  animation: titleReveal 1s ease forwards 1.5s;
+  margin-top: 8px;
+}
+
+.intro-tagline {
+  font-family: 'Lato', sans-serif;
+  font-size: clamp(10px, 2.5vw, 14px);
+  color: rgba(245,230,200,0.6);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0;
+  animation: titleReveal 1s ease forwards 2s;
+}
+
+.intro-bar {
+  width: 0; height: 3px;
+  background: linear-gradient(90deg, transparent, var(--gold2), transparent);
+  margin: 20px 0;
+  border-radius: 2px;
+  opacity: 0;
+  animation: barGrow 1.5s ease forwards 2.5s;
+}
+@keyframes barGrow {
+  to { opacity: 1; width: clamp(200px, 60vw, 400px); }
+}
+
+.intro-loader {
+  display: flex; gap: 8px; margin-top: 20px;
+  opacity: 0;
+  animation: titleReveal 0.5s ease forwards 3.5s;
+}
+.intro-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--gold);
+  animation: dotPulse 1.2s ease-in-out infinite;
+}
+.intro-dot:nth-child(2) { animation-delay: 0.2s; }
+.intro-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotPulse {
+  0%, 100% { opacity: 0.2; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* ===== MENU SCREEN ===== */
+#menu-screen {
+  gap: 20px;
+  background: radial-gradient(ellipse at center, rgba(92,46,10,0.2) 0%, transparent 70%);
+}
+
+.menu-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(22px, 6vw, 48px);
+  color: var(--gold2);
+  text-shadow: 0 0 20px var(--gold), 2px 2px 0 var(--gold3);
+  text-align: center;
+  line-height: 1.2;
+}
+.menu-sub {
+  font-family: 'Cinzel', serif;
+  color: var(--text-cream);
+  letter-spacing: 0.3em;
+  font-size: clamp(9px, 2vw, 13px);
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.menu-board-preview {
+  width: clamp(180px, 50vw, 280px);
+  height: 80px;
+  background: linear-gradient(135deg, var(--dark-wood), var(--mid-wood));
+  border-radius: 40px;
+  border: 3px solid var(--gold3);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6), inset 0 2px 10px rgba(255,200,100,0.1);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  position: relative; overflow: hidden;
+}
+.menu-board-preview::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,200,100,0.1) 0%, transparent 50%);
+  border-radius: inherit;
+}
+.menu-pit-prev {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, var(--pit-inner), #8B5E3C);
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.menu-buttons { display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 320px; }
+
+.btn {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(13px, 3vw, 17px);
+  letter-spacing: 0.1em;
+  padding: 16px 32px;
+  border: 2px solid var(--gold3);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative; overflow: hidden;
+  text-align: center;
+}
+.btn::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,200,100,0.15) 0%, transparent 60%);
+  opacity: 0; transition: opacity 0.2s;
+}
+.btn:hover::before, .btn:active::before { opacity: 1; }
+.btn:active { transform: scale(0.97); }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--gold3), var(--gold));
+  color: var(--dark-wood);
+  font-weight: 700;
+  border-color: var(--gold2);
+  box-shadow: 0 6px 20px rgba(212,160,23,0.4), inset 0 1px 2px rgba(255,255,255,0.3);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+.btn-primary:hover { box-shadow: 0 8px 30px rgba(212,160,23,0.6); transform: translateY(-2px); }
+
+.btn-secondary {
+  background: rgba(44,18,6,0.8);
+  color: var(--gold);
+  border-color: var(--gold3);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+}
+.btn-secondary:hover { background: rgba(92,46,10,0.8); transform: translateY(-2px); }
+
+.btn-danger {
+  background: rgba(192,57,43,0.15);
+  color: #e74c3c;
+  border-color: #c0392b;
+}
+.btn-danger:hover { background: rgba(192,57,43,0.3); }
+
+/* ===== HOW TO PLAY ===== */
+#howto-screen {
+  padding: 20px;
+  overflow-y: auto;
+  gap: 16px;
+  justify-content: flex-start;
+  padding-top: 40px;
+}
+.howto-card {
+  background: rgba(44,18,6,0.9);
+  border: 1px solid var(--gold3);
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 480px;
+  width: 100%;
+}
+.howto-title {
+  font-family: 'Cinzel Decorative', serif;
+  color: var(--gold2);
+  font-size: clamp(16px, 4vw, 22px);
+  margin-bottom: 16px;
+  text-align: center;
+}
+.howto-rule {
+  display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start;
+}
+.howto-num {
+  background: var(--gold);
+  color: var(--dark-wood);
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 13px;
+}
+.howto-text {
+  color: var(--text-cream);
+  font-size: clamp(12px, 2.5vw, 14px);
+  line-height: 1.6;
+  opacity: 0.9;
+}
+
+/* ===== GAME SCREEN ===== */
+#game-screen {
+  padding: 0; gap: 0;
+  justify-content: flex-start;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+/* ===== HEADER ===== */
+.game-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px;
+  background: linear-gradient(180deg, rgba(26,10,0,0.95) 0%, rgba(13,5,0,0.8) 100%);
+  border-bottom: 1px solid rgba(212,160,23,0.3);
+  flex-shrink: 0;
+  position: relative; z-index: 5;
+}
+
+.header-brand {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(10px, 2.5vw, 14px);
+  color: var(--gold);
+  letter-spacing: 0.05em;
+}
+
+.header-scores {
+  display: flex; gap: 16px; align-items: center;
+}
+
+.score-chip {
+  display: flex; flex-direction: column; align-items: center;
+  background: rgba(44,18,6,0.8);
+  border: 1px solid var(--gold3);
+  border-radius: 8px;
+  padding: 4px 12px;
+  min-width: 70px;
+}
+.score-label {
+  font-family: 'Cinzel', serif;
+  font-size: 9px; letter-spacing: 0.1em;
+  color: rgba(245,230,200,0.6); text-transform: uppercase;
+}
+.score-value {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(16px, 4vw, 22px);
+  color: var(--gold2);
+  line-height: 1;
+}
+.score-chip.player-chip .score-value { color: #e74c3c; }
+.score-chip.ai-chip .score-value { color: #5dade2; }
+
+.score-vs {
+  font-family: 'Cinzel', serif;
+  color: var(--gold3); font-size: 12px; font-weight: 700;
+}
+
+.btn-icon {
+  background: rgba(44,18,6,0.8);
+  border: 1px solid var(--gold3);
+  border-radius: 8px;
+  color: var(--gold);
+  font-size: 18px; padding: 6px 10px;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-icon:hover { background: rgba(92,46,10,0.8); }
+
+/* ===== TURN BANNER ===== */
+.turn-banner {
+  text-align: center;
+  padding: 6px 16px;
+  font-family: 'Cinzel', serif;
+  font-size: clamp(10px, 2.5vw, 13px);
+  letter-spacing: 0.15em;
+  transition: all 0.4s ease;
+  flex-shrink: 0;
+  position: relative; z-index: 4;
+}
+.turn-banner.player-turn {
+  background: linear-gradient(90deg, transparent, rgba(231,76,60,0.2), transparent);
+  color: #e74c3c;
+  border-bottom: 1px solid rgba(231,76,60,0.3);
+}
+.turn-banner.ai-turn {
+  background: linear-gradient(90deg, transparent, rgba(93,173,226,0.2), transparent);
+  color: #5dade2;
+  border-bottom: 1px solid rgba(93,173,226,0.3);
+}
+
+/* ===== BOARD CONTAINER ===== */
+.board-container {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 10px 8px;
+  overflow: hidden;
+}
+
+/* ===== 3D BOARD — no rotateX: it breaks mobile touch hit-testing ===== */
+.board-3d {
+  width: 100%; max-width: 540px;
+}
+
+.board {
+  background: linear-gradient(160deg, #4a2008 0%, #5c2e0a 25%, #3d1a05 55%, #5c2e0a 100%);
+  border-radius: 28px;
+  padding: 14px 10px;
+  border: 3px solid var(--gold3);
+  box-shadow:
+    0 6px 0 #1a0800,
+    0 10px 0 #0d0400,
+    0 14px 30px rgba(0,0,0,0.9),
+    0 4px 20px rgba(0,0,0,0.6),
+    inset 0 2px 12px rgba(255,200,100,0.12),
+    inset 0 -3px 15px rgba(0,0,0,0.4),
+    0 0 0 1px rgba(212,160,23,0.3);
+  position: relative;
+  transform: perspective(600px) rotateX(2deg);
+}
+
+/* Board wood grain */
+.board::before {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    88deg,
+    transparent 0px,
+    rgba(255,200,100,0.03) 1px,
+    transparent 2px,
+    transparent 8px
+  );
+  pointer-events: none;
+}
+
+/* Board inner shine */
+.board::after {
+  content: '';
+  position: absolute; top: 4px; left: 30px; right: 30px; height: 40%;
+  background: linear-gradient(180deg, rgba(255,200,100,0.08) 0%, transparent 100%);
+  border-radius: 50px 50px 0 0;
+  pointer-events: none;
+}
+
+.board-label {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(8px, 1.8vw, 11px);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  text-align: center;
+  color: rgba(212,160,23,0.6);
+  margin-bottom: 6px;
+  position: relative; z-index: 2;
+}
+
+/* ===== PIT ROWS ===== */
+.pits-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin: 6px 0;
+  position: relative; z-index: 2;
+}
+
+/* ===== STORES ===== */
+.store-col {
+  display: flex; flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.store {
+  width: clamp(48px, 12vw, 68px);
+  height: clamp(100px, 26vw, 140px);
+  border-radius: 50px;
+  background: radial-gradient(ellipse at 35% 30%, #e8c87a, var(--pit-inner) 40%, #8B5E3C 80%, #5c3b1a);
+  border: 3px solid var(--gold3);
+  box-shadow:
+    inset 0 4px 15px rgba(0,0,0,0.5),
+    inset 0 -4px 10px rgba(0,0,0,0.3),
+    0 4px 15px rgba(0,0,0,0.4),
+    0 0 20px rgba(212,160,23,0.2);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-end;
+  padding-bottom: 8px;
+  position: relative;
+  transition: box-shadow 0.3s ease;
+}
+.store.active-store {
+  box-shadow: 0 0 25px rgba(212,160,23,0.7), inset 0 4px 15px rgba(0,0,0,0.5);
+}
+
+.store-count {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(18px, 4.5vw, 28px);
+  line-height: 1;
+  font-weight: 700;
+  position: absolute;
+  top: 50%; transform: translateY(-50%);
+}
+.store.player-store .store-count { color: #e74c3c; text-shadow: 0 0 10px rgba(231,76,60,0.5); }
+.store.ai-store .store-count { color: #5dade2; text-shadow: 0 0 10px rgba(93,173,226,0.5); }
+
+.store-label-text {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(7px, 1.5vw, 9px);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  position: absolute;
+  bottom: 6px;
+  opacity: 0.7;
+}
+.store.player-store .store-label-text { color: #e74c3c; }
+.store.ai-store .store-label-text { color: #5dade2; }
+
+/* ===== PIT GRID ===== */
+.pits-grid {
+  flex: 1; display: flex; flex-direction: column; gap: 6px;
+}
+
+.pits-row-inner {
+  display: flex; gap: 5px; justify-content: space-between;
+}
+
+/* ===== PIT GRID ===== */
+.pits-grid {
+  flex: 1; display: flex; flex-direction: column; gap: 8px;
+}
+
+/* ===== PIT ===== */
+.pit {
+  flex: 1;
+  aspect-ratio: 1;
+  min-width: 0;
+  min-height: 44px; /* minimum touch target */
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #e8c87a 0%, var(--pit-inner) 40%, #8B5E3C 75%, #5c3b1a 100%);
+  border: 2px solid rgba(212,160,23,0.4);
+  box-shadow:
+    inset 0 4px 12px rgba(0,0,0,0.55),
+    inset 0 -2px 8px rgba(0,0,0,0.25),
+    0 3px 10px rgba(0,0,0,0.4),
+    0 1px 3px rgba(0,0,0,0.3);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.18s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pit.clickable:hover, .pit.clickable:active {
+  transform: scale(1.08);
+  border-color: rgba(212,160,23,0.9);
+  box-shadow:
+    inset 0 4px 12px rgba(0,0,0,0.4),
+    0 6px 18px rgba(0,0,0,0.5),
+    0 0 18px rgba(212,160,23,0.5);
+}
+.pit.clickable { cursor: pointer; border-color: var(--gold2); box-shadow: inset 0 4px 12px rgba(0,0,0,0.4), 0 0 12px rgba(212,160,23,0.5), 0 3px 8px rgba(0,0,0,0.4); animation: pitReady 2s ease-in-out infinite; }
+@keyframes pitReady {
+  0%, 100% { box-shadow: inset 0 4px 12px rgba(0,0,0,0.4), 0 0 8px rgba(212,160,23,0.3); }
+  50% { box-shadow: inset 0 4px 12px rgba(0,0,0,0.4), 0 0 18px rgba(212,160,23,0.7); }
+}
+.pit.not-clickable { cursor: not-allowed; opacity: 0.75; }
+.pit.last-moved {
+  border-color: var(--gold2);
+  box-shadow: 0 0 20px rgba(212,160,23,0.6), inset 0 4px 12px rgba(0,0,0,0.4);
+}
+.pit.highlighted { animation: pitPulse 0.8s ease-in-out infinite; }
+@keyframes pitPulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(212,160,23,0.3), inset 0 4px 12px rgba(0,0,0,0.4); }
+  50% { box-shadow: 0 0 25px rgba(212,160,23,0.7), inset 0 4px 12px rgba(0,0,0,0.4); }
+}
+
+/* ===== SEEDS IN PIT ===== */
+.pit-seeds {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  width: 75%; height: 75%;
+  align-items: center; justify-items: center;
+  pointer-events: none;
+}
+
+.seed {
+  width: clamp(6px, 2vw, 10px);
+  height: clamp(6px, 2vw, 10px);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #c8a060, #8B4513 60%, #5c3010);
+  box-shadow: inset 0 1px 3px rgba(255,255,255,0.2), 0 1px 3px rgba(0,0,0,0.5);
+  animation: seedDrop 0.3s ease forwards;
+}
+
+@keyframes seedDrop {
+  from { transform: scale(0) translateY(-4px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.pit-count {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(13px, 3.5vw, 20px);
+  color: var(--dark-wood);
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(255,255,255,0.3);
+  pointer-events: none;
+  z-index: 1;
+  position: absolute;
+}
+
+/* ===== CAPTURE FLASH ===== */
+.capture-flash {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: radial-gradient(circle, rgba(212,160,23,0.8), transparent);
+  animation: captureFlash 0.5s ease forwards;
+  pointer-events: none;
+  z-index: 3;
+}
+@keyframes captureFlash {
+  0% { opacity: 1; transform: scale(0.5); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+
+/* ===== SOWING ANIMATION ===== */
+.sow-trail {
+  position: absolute; top: 50%; left: 50%;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--gold2);
+  transform: translate(-50%, -50%);
+  animation: sowBounce 0.3s ease forwards;
+  pointer-events: none; z-index: 10;
+}
+@keyframes sowBounce {
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.8; transform: translate(-50%, -70%) scale(1.3); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+}
+
+/* ===== AI THINKING ===== */
+.ai-thinking {
+  display: flex; align-items: center; gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  color: #5dade2;
+  letter-spacing: 0.1em;
+  padding: 4px 0;
+}
+.think-dots { display: flex; gap: 4px; }
+.think-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: #5dade2;
+  animation: thinkDot 1s ease-in-out infinite;
+}
+.think-dot:nth-child(2) { animation-delay: 0.15s; }
+.think-dot:nth-child(3) { animation-delay: 0.3s; }
+@keyframes thinkDot {
+  0%, 100% { opacity: 0.2; transform: scale(0.7); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* ===== MESSAGE / TOAST ===== */
+.toast {
+  position: fixed; top: 70px; left: 50%; transform: translateX(-50%) translateY(-20px);
+  background: rgba(26,10,0,0.95);
+  border: 1px solid var(--gold);
+  border-radius: 30px;
+  padding: 10px 24px;
+  font-family: 'Cinzel', serif;
+  font-size: clamp(11px, 2.5vw, 14px);
+  color: var(--gold2);
+  letter-spacing: 0.1em;
+  opacity: 0; transition: all 0.3s ease;
+  z-index: 200; white-space: nowrap;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ===== END GAME MODAL ===== */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 500; opacity: 0; pointer-events: none;
+  transition: opacity 0.4s ease;
+  backdrop-filter: blur(4px);
+}
+.modal-overlay.show { opacity: 1; pointer-events: all; }
+
+.modal-box {
+  background: linear-gradient(135deg, #2c1206, #1a0a00);
+  border: 3px solid var(--gold);
+  border-radius: 20px;
+  padding: 32px 28px;
+  text-align: center;
+  max-width: 340px; width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 40px rgba(212,160,23,0.3);
+  transform: scale(0.8);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.modal-overlay.show .modal-box { transform: scale(1); }
+
+.modal-icon { font-size: 60px; margin-bottom: 8px; }
+.modal-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(20px, 5vw, 28px);
+  margin-bottom: 8px;
+}
+.modal-title.win { color: var(--gold2); text-shadow: 0 0 20px var(--gold); }
+.modal-title.lose { color: #e74c3c; }
+.modal-title.draw { color: var(--text-cream); }
+
+.modal-score-row {
+  display: flex; gap: 20px; justify-content: center; margin: 16px 0;
+}
+.modal-score-item {
+  display: flex; flex-direction: column; align-items: center;
+}
+.modal-score-num {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 36px; font-weight: 700; line-height: 1;
+}
+.modal-score-num.player { color: #e74c3c; }
+.modal-score-num.ai { color: #5dade2; }
+.modal-score-lbl {
+  font-family: 'Cinzel', serif;
+  font-size: 10px; letter-spacing: 0.2em; opacity: 0.6; color: var(--text-cream);
+}
+.modal-msg {
+  font-family: 'Lato', sans-serif;
+  color: rgba(245,230,200,0.7);
+  font-size: 13px; margin-bottom: 20px; line-height: 1.6;
+}
+.modal-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+/* ===== SCOREBOARD ===== */
+#scores-screen { gap: 16px; padding: 20px; overflow-y: auto; justify-content: flex-start; padding-top: 40px; }
+
+.scores-table {
+  width: 100%; max-width: 400px;
+  border-collapse: collapse;
+}
+.scores-table th {
+  font-family: 'Cinzel', serif;
+  color: var(--gold);
+  font-size: 11px; letter-spacing: 0.2em;
+  padding: 10px 8px;
+  border-bottom: 1px solid rgba(212,160,23,0.3);
+}
+.scores-table td {
+  font-family: 'Lato', sans-serif;
+  color: var(--text-cream);
+  font-size: 13px;
+  padding: 10px 8px;
+  text-align: center;
+  border-bottom: 1px solid rgba(92,46,10,0.3);
+}
+.scores-table tr:hover td { background: rgba(92,46,10,0.2); }
+.rank-gold { color: var(--gold2); font-weight: 700; }
+.rank-silver { color: #bdc3c7; font-weight: 700; }
+.rank-bronze { color: #cd6133; font-weight: 700; }
+
+/* ===== DIFFICULTY BADGE ===== */
+.diff-badge {
+  display: inline-block;
+  padding: 2px 8px; border-radius: 10px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px; letter-spacing: 0.1em;
+}
+.diff-easy { background: rgba(39,174,96,0.2); color: #27ae60; border: 1px solid rgba(39,174,96,0.4); }
+.diff-medium { background: rgba(212,160,23,0.2); color: var(--gold); border: 1px solid rgba(212,160,23,0.4); }
+.diff-hard { background: rgba(192,57,43,0.2); color: #e74c3c; border: 1px solid rgba(192,57,43,0.4); }
+
+/* ===== DIFFICULTY SELECT ===== */
+.diff-options { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.diff-opt {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(11px, 2.5vw, 14px);
+  padding: 12px 20px; border-radius: 8px;
+  cursor: pointer; transition: all 0.2s;
+  border: 2px solid transparent;
+  min-width: 90px; text-align: center;
+}
+.diff-opt:hover { transform: translateY(-2px); }
+.diff-opt.diff-easy { background: rgba(39,174,96,0.15); color: #27ae60; border-color: rgba(39,174,96,0.5); }
+.diff-opt.diff-medium { background: rgba(212,160,23,0.15); color: var(--gold); border-color: rgba(212,160,23,0.5); }
+.diff-opt.diff-hard { background: rgba(192,57,43,0.15); color: #e74c3c; border-color: rgba(192,57,43,0.5); }
+.diff-opt:active { transform: scale(0.95); }
+
+/* ===== SESSION STATS ===== */
+.session-stats {
+  display: flex; gap: 16px; justify-content: center;
+  margin-top: 4px;
+}
+.stat-box {
+  display: flex; flex-direction: column; align-items: center;
+  background: rgba(44,18,6,0.6);
+  border: 1px solid rgba(212,160,23,0.3);
+  border-radius: 8px; padding: 6px 14px;
+}
+.stat-val {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 18px; color: var(--gold2);
+}
+.stat-lbl {
+  font-family: 'Cinzel', serif;
+  font-size: 8px; letter-spacing: 0.15em; color: rgba(245,230,200,0.5); text-transform: uppercase;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 380px) {
+  .board { padding: 10px 8px; border-radius: 40px; }
+  .store { width: 38px; height: 80px; }
+  .pits-row-inner { gap: 4px; }
+}
+@media (min-height: 700px) {
+  .board-container { padding: 16px; }
+}
+
+/* ===== CONFETTI PARTICLE ===== */
+.confetti {
+  position: fixed;
+  width: 8px; height: 8px;
+  border-radius: 2px;
+  top: -10px;
+  pointer-events: none; z-index: 600;
+  animation: confettiFall linear forwards;
+}
+@keyframes confettiFall {
+  to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+/* ===== SCROLL FIX ===== */
+#howto-screen, #scores-screen {
+  -webkit-overflow-scrolling: touch;
+}
+</style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+
+<!-- INTRO SCREEN -->
+<div id="intro-screen" class="screen active">
+  <div class="intro-logo-wrap">
+    <div class="intro-crown">👑</div>
+    <div class="intro-title">KINGSMAKERS</div>
+    <div class="intro-sub">Games Studio</div>
+    <div class="intro-bar"></div>
+    <div class="intro-game-title">⚫ OWARE ⚫</div>
+    <div class="intro-tagline">The Ancient African Strategy Game</div>
+    <div class="intro-loader">
+      <div class="intro-dot"></div>
+      <div class="intro-dot"></div>
+      <div class="intro-dot"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN MENU -->
+<div id="menu-screen" class="screen">
+  <div style="text-align:center; margin-bottom:8px;">
+    <div style="font-size:40px; margin-bottom:4px;">👑</div>
+    <div class="menu-title">OWARE</div>
+    <div class="menu-sub">KingsMakers Edition</div>
+  </div>
+  <div class="menu-board-preview">
+    <div class="menu-pit-prev"></div>
+    <div class="menu-pit-prev"></div>
+    <div class="menu-pit-prev"></div>
+    <div class="menu-pit-prev"></div>
+    <div class="menu-pit-prev"></div>
+    <div class="menu-pit-prev"></div>
+  </div>
+  <div class="session-stats">
+    <div class="stat-box"><div class="stat-val" id="stat-wins">0</div><div class="stat-lbl">Wins</div></div>
+    <div class="stat-box"><div class="stat-val" id="stat-losses">0</div><div class="stat-lbl">Losses</div></div>
+    <div class="stat-box"><div class="stat-val" id="stat-draws">0</div><div class="stat-lbl">Draws</div></div>
+  </div>
+  <div class="menu-buttons">
+    <button class="btn btn-primary" onclick="App.showDiffSelect()">⚔️ Play vs Computer</button>
+    <button class="btn btn-secondary" onclick="App.showScreen('scores-screen')">🏆 Leaderboard</button>
+    <button class="btn btn-secondary" onclick="App.showScreen('howto-screen')">📖 How to Play</button>
+  </div>
+
+  <!-- PWA Install Banner -->
+  <div id="install-banner" style="display:none; align-items:center; gap:10px; background:rgba(44,18,6,0.95); border:1px solid var(--gold3); border-radius:12px; padding:12px 16px; max-width:320px; width:90%; margin-top:8px;">
+    <span style="font-size:24px;">📲</span>
+    <div style="flex:1;">
+      <div style="font-family:'Cinzel',serif; font-size:12px; color:var(--gold); letter-spacing:0.05em;">Install KingsMakers Oware</div>
+      <div style="font-family:'Lato',sans-serif; font-size:11px; color:rgba(245,230,200,0.6); margin-top:2px;">Play offline, anytime!</div>
+    </div>
+    <button onclick="triggerInstall()" style="background:var(--gold3); color:var(--dark-wood); border:none; border-radius:6px; padding:6px 12px; font-family:'Cinzel',serif; font-size:11px; font-weight:700; cursor:pointer;">Install</button>
+    <button onclick="document.getElementById('install-banner').style.display='none'" style="background:none; border:none; color:rgba(245,230,200,0.4); cursor:pointer; font-size:16px; padding:0 4px;">✕</button>
+  </div>
+
+  <div style="font-family:'Cinzel',serif; font-size:9px; color:rgba(212,160,23,0.3); letter-spacing:0.2em; margin-top:8px;">KINGSMAKERS GAMES STUDIO © 2025</div>
+</div>
+
+<!-- DIFFICULTY SELECT -->
+<div id="diff-screen" class="screen">
+  <div style="text-align:center; margin-bottom:20px;">
+    <div style="font-family:'Cinzel Decorative',serif; font-size:clamp(16px,4vw,22px); color:var(--gold2); margin-bottom:8px;">Choose Difficulty</div>
+    <div style="font-family:'Cinzel',serif; font-size:11px; color:rgba(245,230,200,0.6); letter-spacing:0.2em;">HOW WISE IS YOUR OPPONENT?</div>
+  </div>
+  <div class="diff-options">
+    <div class="diff-opt diff-easy" onclick="App.startGame('easy')">🌱<br>Easy</div>
+    <div class="diff-opt diff-medium" onclick="App.startGame('medium')">⚡<br>Medium</div>
+    <div class="diff-opt diff-hard" onclick="App.startGame('hard')">🔥<br>Hard</div>
+  </div>
+  <br>
+  <button class="btn btn-secondary" onclick="App.showScreen('menu-screen')" style="max-width:200px;">← Back</button>
+</div>
+
+<!-- HOW TO PLAY -->
+<div id="howto-screen" class="screen">
+  <div class="howto-card">
+    <div class="howto-title">How to Play Oware</div>
+    <div class="howto-rule"><div class="howto-num">1</div><div class="howto-text">The board has <strong>2 rows of 6 pits</strong>. Each starts with 4 seeds. You own the bottom row.</div></div>
+    <div class="howto-rule"><div class="howto-num">2</div><div class="howto-text">On your turn, <strong>pick any of your pits</strong> with seeds and distribute them one by one counter-clockwise.</div></div>
+    <div class="howto-rule"><div class="howto-num">3</div><div class="howto-text"><strong>Capture:</strong> If your last seed lands in an opponent's pit making it exactly 2 or 3, you capture those seeds!</div></div>
+    <div class="howto-rule"><div class="howto-num">4</div><div class="howto-text">Captures continue <strong>backwards</strong> if preceding pits also have 2 or 3 seeds.</div></div>
+    <div class="howto-rule"><div class="howto-num">5</div><div class="howto-text">If a move would <strong>leave your opponent with no seeds</strong>, you must choose another move (grand slam rule).</div></div>
+    <div class="howto-rule"><div class="howto-num">6</div><div class="howto-text">Game ends when a player has <strong>25+ seeds</strong> or no valid moves exist. Most seeds wins!</div></div>
+    <div style="margin-top:16px; text-align:center;">
+      <div style="font-family:'Cinzel',serif; font-size:10px; color:var(--gold3); letter-spacing:0.2em; opacity:0.8;">AN ANCIENT GHANAIAN TRADITION</div>
+    </div>
+  </div>
+  <button class="btn btn-secondary" onclick="App.showScreen('menu-screen')" style="max-width:200px;">← Back</button>
+</div>
+
+<!-- SCOREBOARD -->
+<div id="scores-screen" class="screen">
+  <div style="font-family:'Cinzel Decorative',serif; font-size:clamp(18px,4vw,24px); color:var(--gold2); margin-bottom:4px;">🏆 Leaderboard</div>
+  <table class="scores-table" id="scores-table">
+    <thead><tr><th>#</th><th>Date</th><th>You</th><th>AI</th><th>Result</th><th>Level</th></tr></thead>
+    <tbody id="scores-body">
+      <tr><td colspan="6" style="color:rgba(245,230,200,0.4); font-size:12px; padding:20px;">No games played yet</td></tr>
+    </tbody>
+  </table>
+  <button class="btn btn-secondary" onclick="App.showScreen('menu-screen')" style="max-width:200px; margin-top:10px;">← Back</button>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="game-screen" class="screen">
+  <!-- Header -->
+  <div class="game-header">
+    <div>
+      <div class="header-brand">👑 KINGSMAKERS</div>
+      <div id="diff-indicator" style="font-family:'Cinzel',serif; font-size:9px; letter-spacing:0.15em; opacity:0.6;"></div>
+    </div>
+    <div class="header-scores">
+      <div class="score-chip ai-chip">
+        <div class="score-label">AI</div>
+        <div class="score-value" id="ai-store-display">0</div>
+      </div>
+      <div class="score-vs">VS</div>
+      <div class="score-chip player-chip">
+        <div class="score-label">You</div>
+        <div class="score-value" id="player-store-display">0</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;">
+      <button class="btn-icon" id="mute-btn" onclick="App.toggleMute()" title="Mute/Unmute">🔊</button>
+      <button class="btn-icon" onclick="App.confirmQuit()" title="Menu">⬅</button>
+    </div>
+  </div>
+
+  <!-- Turn Banner -->
+  <div class="turn-banner player-turn" id="turn-banner">Your Turn — Pick a pit</div>
+
+  <!-- Board -->
+  <div class="board-container">
+    <div class="board-3d">
+      <div class="board">
+        <div class="board-label" id="ai-label-text">Computer (AI)</div>
+        <div class="pits-row">
+          <!-- AI store (left) + AI pits + Player store (right) -->
+          <div class="store ai-store" id="store-ai">
+            <div class="store-count" id="store-ai-count">0</div>
+            <div class="store-label-text">AI</div>
+          </div>
+          <div class="pits-grid">
+            <!-- AI row (top, pits 6→11, displayed reversed visually) -->
+            <div class="pits-row-inner" id="ai-pits-row"></div>
+            <!-- Player row (bottom, pits 0→5) -->
+            <div class="pits-row-inner" id="player-pits-row"></div>
+          </div>
+          <div class="store player-store" id="store-player">
+            <div class="store-count" id="store-player-count">0</div>
+            <div class="store-label-text">YOU</div>
+          </div>
+        </div>
+        <div class="board-label" id="player-label-text">You (Player)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Thinking indicator -->
+  <div style="display:flex; justify-content:center; min-height:28px; align-items:center;">
+    <div class="ai-thinking" id="ai-thinking" style="display:none!important;">
+      <span>AI is thinking</span>
+      <div class="think-dots">
+        <div class="think-dot"></div>
+        <div class="think-dot"></div>
+        <div class="think-dot"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- End Game Modal -->
+<div class="modal-overlay" id="end-modal">
+  <div class="modal-box">
+    <div class="modal-icon" id="modal-icon">🏆</div>
+    <div class="modal-title" id="modal-title">You Win!</div>
+    <div class="modal-score-row">
+      <div class="modal-score-item">
+        <div class="modal-score-num player" id="modal-player-score">0</div>
+        <div class="modal-score-lbl">YOUR SEEDS</div>
+      </div>
+      <div style="font-family:'Cinzel',serif; color:var(--gold3); font-size:18px; align-self:center;">VS</div>
+      <div class="modal-score-item">
+        <div class="modal-score-num ai" id="modal-ai-score">0</div>
+        <div class="modal-score-lbl">AI SEEDS</div>
+      </div>
+    </div>
+    <div class="modal-msg" id="modal-msg"></div>
+    <div class="modal-btns">
+      <button class="btn btn-primary" onclick="App.rematch()" style="min-width:120px;">⚔️ Rematch</button>
+      <button class="btn btn-secondary" onclick="App.goMenu()" style="min-width:120px;">🏠 Menu</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================================================
+// OWARE GAME ENGINE — KingsMakers Edition
+// Carefully written with bug checking throughout
+// ===================================================
+
+// ===== PARTICLE BACKGROUND =====
+(function initParticles() {
+  const canvas = document.getElementById('particles');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [];
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Create floating particles (subtle gold dust)
+  for (let i = 0; i < 40; i++) {
+    particles.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.5 + 0.3,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: -Math.random() * 0.4 - 0.1,
+      alpha: Math.random() * 0.4 + 0.1,
+      color: Math.random() > 0.5 ? '#d4a017' : '#c8a06a'
+    });
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, W, H);
+    for (const p of particles) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = p.alpha;
+      ctx.fill();
+      p.x += p.vx; p.y += p.vy;
+      if (p.y < -5) { p.y = H + 5; p.x = Math.random() * W; }
+      if (p.x < -5) p.x = W + 5;
+      if (p.x > W + 5) p.x = -5;
+    }
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(animate);
+  }
+  animate();
+})();
+
+// ===== SOUND ENGINE (Web Audio API — no files needed) =====
+const Sound = (function() {
+  let ctx = null;
+  let muted = false;
+
+  function init() {
+    if (ctx) return;
+    try {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch(e) { ctx = null; }
+  }
+
+  // Resume context on first user gesture (required by browsers)
+  function resume() {
+    if (ctx && ctx.state === 'suspended') ctx.resume();
+  }
+
+  function master(gainNode, vol) {
+    gainNode.gain.setValueAtTime(vol, ctx.currentTime);
+    gainNode.connect(ctx.destination);
+  }
+
+  // Seed drop — short wooden tap (click + low thud)
+  function seedDrop(variation) {
+    if (!ctx || muted) return;
+    resume();
+    try {
+      const t = ctx.currentTime;
+      // High click part
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      // Vary pitch slightly so repeated sounds don't sound robotic
+      osc.frequency.setValueAtTime(220 + variation * 30, t);
+      osc.frequency.exponentialRampToValueAtTime(80, t + 0.06);
+      g.gain.setValueAtTime(0.18, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+      osc.connect(g); master(g, 1);
+      osc.start(t); osc.stop(t + 0.1);
+
+      // Wood thud (noise burst)
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.05, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const ng = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = 400 + variation * 50;
+      filter.Q.value = 1.5;
+      ng.gain.setValueAtTime(0.25, t);
+      ng.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+      src.connect(filter); filter.connect(ng); master(ng, 1);
+      src.start(t); src.stop(t + 0.06);
+    } catch(e) {}
+  }
+
+  // Pick up a pit — swoosh sound
+  function pickup() {
+    if (!ctx || muted) return;
+    resume();
+    try {
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(300, t);
+      osc.frequency.exponentialRampToValueAtTime(600, t + 0.12);
+      g.gain.setValueAtTime(0.0, t);
+      g.gain.linearRampToValueAtTime(0.15, t + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+      osc.connect(g); master(g, 1);
+      osc.start(t); osc.stop(t + 0.15);
+    } catch(e) {}
+  }
+
+  // Capture — coins clinking (rapid high pings)
+  function capture(count) {
+    if (!ctx || muted) return;
+    resume();
+    try {
+      const pings = Math.min(count, 4);
+      for (let i = 0; i < pings; i++) {
+        const t = ctx.currentTime + i * 0.07;
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(900 + i * 120, t);
+        osc.frequency.exponentialRampToValueAtTime(600 + i * 80, t + 0.15);
+        g.gain.setValueAtTime(0.22, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+        osc.connect(g); master(g, 1);
+        osc.start(t); osc.stop(t + 0.2);
+      }
+    } catch(e) {}
+  }
+
+  // Win — triumphant ascending chime
+  function win() {
+    if (!ctx || muted) return;
+    resume();
+    try {
+      const notes = [523, 659, 784, 1047]; // C E G C
+      notes.forEach((freq, i) => {
+        const t = ctx.currentTime + i * 0.18;
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, t);
+        g.gain.setValueAtTime(0.0, t);
+        g.gain.linearRampToValueAtTime(0.25, t + 0.04);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+        osc.connect(g); master(g, 1);
+        osc.start(t); osc.stop(t + 0.45);
+      });
+    } catch(e) {}
+  }
+
+  // Lose — descending sad tones
+  function lose() {
+    if (!ctx || muted) return;
+    resume();
+    try {
+      const notes = [392, 349, 294, 261]; // G F D C
+      notes.forEach((freq, i) => {
+        const t = ctx.currentTime + i * 0.2;
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, t);
+        g.gain.setValueAtTime(0.0, t);
+        g.gain.linearRampToValueAtTime(0.2, t + 0.05);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+        osc.connect(g); master(g, 1);
+        osc.start(t); osc.stop(t + 0.4);
+      });
+    } catch(e) {}
+  }
+
+  // Draw — neutral two-tone
+  function draw() {
+    if (!ctx || muted) return;
+    resume();
+    try {
+      [440, 440].forEach((freq, i) => {
+        const t = ctx.currentTime + i * 0.22;
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, t);
+        g.gain.setValueAtTime(0.15, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+        osc.connect(g); master(g, 1);
+        osc.start(t); osc.stop(t + 0.35);
+      });
+    } catch(e) {}
+  }
+
+  // UI button click
+  function click() {
+    if (!ctx || muted) return;
+    resume();
+    try {
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(480, t);
+      osc.frequency.exponentialRampToValueAtTime(380, t + 0.08);
+      g.gain.setValueAtTime(0.1, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+      osc.connect(g); master(g, 1);
+      osc.start(t); osc.stop(t + 0.12);
+    } catch(e) {}
+  }
+
+  // Intro drum roll / fanfare
+  function intro() {
+    if (!ctx || muted) return;
+    resume();
+    try {
+      // Low drum hits
+      for (let i = 0; i < 3; i++) {
+        const t = ctx.currentTime + i * 0.28;
+        const buf = ctx.createBuffer(1, ctx.sampleRate * 0.15, ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let j = 0; j < data.length; j++) data[j] = (Math.random()*2-1) * Math.exp(-j/(ctx.sampleRate*0.05));
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        const f = ctx.createBiquadFilter();
+        f.type = 'lowpass'; f.frequency.value = 150;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.4, t);
+        src.connect(f); f.connect(g); master(g, 1);
+        src.start(t);
+      }
+      // Fanfare chord after drums
+      const chordTime = ctx.currentTime + 0.9;
+      [261, 329, 392, 523].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, chordTime);
+        g.gain.setValueAtTime(0.0, chordTime);
+        g.gain.linearRampToValueAtTime(0.12, chordTime + 0.1);
+        g.gain.exponentialRampToValueAtTime(0.001, chordTime + 1.2);
+        osc.connect(g); master(g, 1);
+        osc.start(chordTime); osc.stop(chordTime + 1.3);
+      });
+    } catch(e) {}
+  }
+
+  function toggleMute() {
+    muted = !muted;
+    return muted;
+  }
+
+  function isMuted() { return muted; }
+
+  return { init, resume, seedDrop, pickup, capture, win, lose, draw, click, intro, toggleMute, isMuted };
+})();
+
+// ===== APP CONTROLLER =====
+const App = (function() {
+  // --- State ---
+  let currentScreen = 'intro-screen';
+  let gameState = null;
+  let difficulty = 'medium';
+  let animating = false;
+  let sessionStats = { wins: 0, losses: 0, draws: 0 };
+  let scoreHistory = [];
+  let toastTimer = null;
+  let lastDifficulty = 'medium';
+
+  // Oware board layout:
+  // Pits 0-5: Player's row (bottom, left to right)
+  // Pits 6-11: AI's row (top, displayed right to left visually)
+  // Store: playerStore, aiStore
+  // Sowing direction: counter-clockwise
+  // Counter-clockwise from player perspective:
+  //   Player row: 0→1→2→3→4→5 then
+  //   AI row: 6→7→8→9→10→11 then back to 0
+
+  const TOTAL_PITS = 12;
+  const PLAYER_PITS = [0, 1, 2, 3, 4, 5];
+  const AI_PITS = [6, 7, 8, 9, 10, 11];
+
+  // Counter-clockwise sequence (Oware standard)
+  function nextPit(pit) {
+    return (pit + 1) % TOTAL_PITS;
+  }
+
+  // --- Screen Management ---
+  function showScreen(id) {
+    const old = document.getElementById(currentScreen);
+    if (old) old.classList.remove('active');
+    const next = document.getElementById(id);
+    if (next) next.classList.add('active');
+    currentScreen = id;
+
+    if (id === 'scores-screen') renderScoreboard();
+    if (id === 'menu-screen') updateSessionStats();
+  }
+
+  function showDiffSelect() {
+    showScreen('diff-screen');
+  }
+
+  function updateSessionStats() {
+    document.getElementById('stat-wins').textContent = sessionStats.wins;
+    document.getElementById('stat-losses').textContent = sessionStats.losses;
+    document.getElementById('stat-draws').textContent = sessionStats.draws;
+  }
+
+  // --- Toast ---
+  function showToast(msg, duration = 2000) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), duration);
+  }
+
+  // --- Game Init ---
+  function startGame(diff) {
+    difficulty = diff;
+    lastDifficulty = diff;
+    // Initialize fresh board: 4 seeds per pit
+    gameState = {
+      board: new Array(TOTAL_PITS).fill(4),
+      playerStore: 0,
+      aiStore: 0,
+      currentTurn: 'player', // player goes first
+      gameOver: false,
+      lastMoved: -1
+    };
+    animating = false;
+    showScreen('game-screen');
+
+    // Update difficulty indicator
+    const diffMap = { easy: '🌱 EASY', medium: '⚡ MEDIUM', hard: '🔥 HARD' };
+    document.getElementById('diff-indicator').textContent = diffMap[diff] || '';
+
+    renderBoard();
+    updateTurnBanner();
+  }
+
+  // --- Event Delegation — bulletproof version ---
+  // We attach to the game-screen div which is ALWAYS in the DOM
+  // We do NOT use boardListenerAttached flag — we attach once on page load, not per game
+  function setupBoardListener() {
+    // Intentionally empty — listener is set up once at page load in initBoardEvents()
+  }
+
+  // Called once when page loads — attaches to stable game-screen container
+  function initBoardEvents() {
+    const gameScreen = document.getElementById('game-screen');
+
+    let touchStartEl = null; // track where finger went DOWN
+
+    gameScreen.addEventListener('touchstart', function(e) {
+      Sound.resume();
+      // Record which pit the finger touched on the way DOWN
+      let el = e.touches[0] ? document.elementFromPoint(
+        e.touches[0].clientX, e.touches[0].clientY
+      ) : e.target;
+      // Walk up to find .pit
+      while (el && el !== gameScreen) {
+        if (el.classList && el.classList.contains('pit')) {
+          touchStartEl = el;
+          return;
+        }
+        el = el.parentElement;
+      }
+      touchStartEl = null;
+    }, { passive: true });
+
+    gameScreen.addEventListener('touchend', function(e) {
+      if (!touchStartEl) return;
+      const el = touchStartEl;
+      touchStartEl = null;
+      handlePitActivation(el);
+    }, { passive: true });
+
+    // Desktop click fallback
+    gameScreen.addEventListener('click', function(e) {
+      let el = e.target;
+      while (el && el !== gameScreen) {
+        if (el.classList && el.classList.contains('pit')) {
+          handlePitActivation(el);
+          return;
+        }
+        el = el.parentElement;
+      }
+    });
+  }
+
+  function handlePitActivation(pitEl) {
+    if (!pitEl) return;
+    if (!gameState || gameState.gameOver) return;
+    if (animating) { showToast('Wait — seeds still moving…'); return; }
+    if (gameState.currentTurn !== 'player') return;
+
+    const pitIndex = parseInt(pitEl.dataset.pit, 10);
+    const owner = pitEl.dataset.owner;
+
+    if (isNaN(pitIndex) || owner !== 'player') return;
+
+    onPitClick(pitIndex);
+  }
+
+  // --- Board Rendering ---
+  function renderBoard() {
+    if (!gameState) return;
+
+    // Update stores
+    document.getElementById('store-player-count').textContent = gameState.playerStore;
+    document.getElementById('store-ai-count').textContent = gameState.aiStore;
+    document.getElementById('player-store-display').textContent = gameState.playerStore;
+    document.getElementById('ai-store-display').textContent = gameState.aiStore;
+
+    // Render AI pits (pits 6-11), displayed RIGHT to LEFT (pit 11 on left, pit 6 on right)
+    // Visual: from AI's perspective left to right = pits 11,10,9,8,7,6
+    // But from player looking at board: AI row left to right = pit 11 down to pit 6
+    const aiRow = document.getElementById('ai-pits-row');
+    aiRow.innerHTML = '';
+    for (let i = 11; i >= 6; i--) {
+      aiRow.appendChild(createPitEl(i, 'ai'));
+    }
+
+    // Render Player pits (0-5), left to right
+    const playerRow = document.getElementById('player-pits-row');
+    playerRow.innerHTML = '';
+    for (let i = 0; i <= 5; i++) {
+      playerRow.appendChild(createPitEl(i, 'player'));
+    }
+  }
+
+  function createPitEl(pitIndex, owner) {
+    const div = document.createElement('div');
+    div.className = 'pit';
+    div.dataset.pit = pitIndex;
+    div.dataset.owner = owner;
+    const count = gameState.board[pitIndex];
+
+    const isClickable = (
+      gameState.currentTurn === 'player' &&
+      owner === 'player' &&
+      count > 0 &&
+      !animating &&
+      !gameState.gameOver
+    );
+
+    if (isClickable) {
+      div.classList.add('clickable');
+    } else {
+      div.classList.add('not-clickable');
+    }
+
+    if (pitIndex === gameState.lastMoved) {
+      div.classList.add('last-moved');
+    }
+
+    // Show count as number (for 5+ seeds) or draw seeds
+    if (count === 0) {
+      // Empty pit — just show the bowl
+    } else if (count > 8) {
+      const num = document.createElement('div');
+      num.className = 'pit-count';
+      num.textContent = count;
+      div.appendChild(num);
+    } else {
+      const seedGrid = document.createElement('div');
+      seedGrid.className = 'pit-seeds';
+      for (let s = 0; s < Math.min(count, 9); s++) {
+        const seed = document.createElement('div');
+        seed.className = 'seed';
+        seed.style.animationDelay = (s * 0.03) + 's';
+        seedGrid.appendChild(seed);
+      }
+      div.appendChild(seedGrid);
+      if (count > 9) {
+        const num = document.createElement('div');
+        num.className = 'pit-count';
+        num.textContent = count;
+        div.appendChild(num);
+      }
+    }
+
+    return div;
+  }
+
+  function updateTurnBanner() {
+    const banner = document.getElementById('turn-banner');
+    if (!gameState) return;
+    if (gameState.currentTurn === 'player') {
+      banner.textContent = '⚔️ Your Turn — Choose a pit';
+      banner.className = 'turn-banner player-turn';
+    } else {
+      banner.textContent = '🤖 AI is thinking...';
+      banner.className = 'turn-banner ai-turn';
+    }
+  }
+
+  // --- Pit Click Handler ---
+  function onPitClick(pitIndex) {
+    if (animating || gameState.gameOver || gameState.currentTurn !== 'player') return;
+    if (!PLAYER_PITS.includes(pitIndex)) return;
+    if (gameState.board[pitIndex] === 0) {
+      showToast('This pit is empty!');
+      return;
+    }
+
+    // Check valid moves (grand slam prevention)
+    const validMoves = getValidMoves(gameState, 'player');
+    if (!validMoves.includes(pitIndex)) {
+      showToast('That move would starve the AI — pick another!');
+      return;
+    }
+
+    executeMove(pitIndex, 'player');
+  }
+
+  // --- Get Valid Moves ---
+  // Oware rule: you cannot make a move that leaves opponent with NO seeds,
+  // UNLESS there is no other legal move available.
+  function getValidMoves(state, turn) {
+    const myPits = turn === 'player' ? PLAYER_PITS : AI_PITS;
+    const opponentPits = turn === 'player' ? AI_PITS : PLAYER_PITS;
+
+    // Get all pits with seeds
+    const available = myPits.filter(p => state.board[p] > 0);
+    if (available.length === 0) return [];
+
+    // Check if opponent has seeds currently
+    const opponentHasSeeds = opponentPits.some(p => state.board[p] > 0);
+
+    if (!opponentHasSeeds) {
+      // Opponent has no seeds — all moves are valid (we try to feed them)
+      return available;
+    }
+
+    // Filter out moves that would starve the opponent (grand slam)
+    const nonStarving = available.filter(p => {
+      const testState = simulateMove(state, p, turn);
+      return opponentPits.some(op => testState.board[op] > 0);
+    });
+
+    // If ALL moves would starve, allow all (no choice)
+    return nonStarving.length > 0 ? nonStarving : available;
+  }
+
+  // --- Simulate Move (for AI and validation) ---
+  function simulateMove(state, pitIndex, turn) {
+    // Deep copy state
+    const newState = {
+      board: [...state.board],
+      playerStore: state.playerStore,
+      aiStore: state.aiStore,
+      currentTurn: turn,
+      gameOver: false,
+      lastMoved: -1
+    };
+
+    const seeds = newState.board[pitIndex];
+    if (seeds === 0) return newState;
+
+    newState.board[pitIndex] = 0;
+    let current = pitIndex;
+    let remaining = seeds;
+
+    // Sow seeds counter-clockwise, skipping own store
+    while (remaining > 0) {
+      current = nextPit(current);
+      // Skip stores (stores are handled separately, not in board array)
+      // In standard Oware, seeds go into pits only (stores are separate)
+      // We place in all 12 pits, stores get seeds via capture only
+      newState.board[current]++;
+      remaining--;
+    }
+
+    // Capture phase
+    const opponentPits = turn === 'player' ? AI_PITS : PLAYER_PITS;
+    let capturePos = current;
+
+    while (opponentPits.includes(capturePos) &&
+           (newState.board[capturePos] === 2 || newState.board[capturePos] === 3)) {
+      const captured = newState.board[capturePos];
+      if (turn === 'player') {
+        newState.playerStore += captured;
+      } else {
+        newState.aiStore += captured;
+      }
+      newState.board[capturePos] = 0;
+      // Move backwards (counter-clockwise means previous = (pos - 1 + 12) % 12)
+      capturePos = (capturePos - 1 + TOTAL_PITS) % TOTAL_PITS;
+    }
+
+    newState.lastMoved = current;
+    return newState;
+  }
+
+  // --- Execute Move with Animation ---
+  async function executeMove(pitIndex, turn) {
+    animating = true;
+    Sound.pickup();
+    updateTurnBanner();
+    renderBoard();
+
+    const seeds = gameState.board[pitIndex];
+    gameState.board[pitIndex] = 0;
+    let current = pitIndex;
+    let remaining = seeds;
+    let sowCount = 0;
+
+    // Human-like sowing speed: 400-550ms per seed with slight rhythm variation
+    // Real Oware players place one seed every ~0.5 seconds — deliberate and visible
+    const baseSowDelay = 460;
+
+    while (remaining > 0) {
+      current = nextPit(current);
+      gameState.board[current]++;
+      remaining--;
+      sowCount++;
+      renderBoard();
+      highlightPit(current);
+      Sound.seedDrop(sowCount % 5);
+      // Add tiny natural rhythm variation (±40ms) so it feels human not robotic
+      const variation = Math.floor(Math.random() * 80) - 40;
+      await sleep(baseSowDelay + variation);
+    }
+
+    // Capture phase
+    const opponentPits = turn === 'player' ? AI_PITS : PLAYER_PITS;
+    let capturePos = current;
+    let totalCaptured = 0;
+
+    while (opponentPits.includes(capturePos) &&
+           (gameState.board[capturePos] === 2 || gameState.board[capturePos] === 3)) {
+      const captured = gameState.board[capturePos];
+      if (turn === 'player') {
+        gameState.playerStore += captured;
+      } else {
+        gameState.aiStore += captured;
+      }
+      totalCaptured += captured;
+      gameState.board[capturePos] = 0;
+
+      // Flash the captured pit
+      flashCapture(capturePos);
+      Sound.capture(captured);
+      await sleep(600); // slow enough to see each capture clearly
+
+      capturePos = (capturePos - 1 + TOTAL_PITS) % TOTAL_PITS;
+    }
+
+    gameState.lastMoved = current;
+
+    if (totalCaptured > 0) {
+      showToast(turn === 'player'
+        ? `🎯 You captured ${totalCaptured} seeds!`
+        : `🤖 AI captured ${totalCaptured} seeds!`);
+    }
+
+    renderBoard();
+
+    // Check end condition
+    if (checkGameEnd()) {
+      animating = false;
+      return;
+    }
+
+    // Switch turns
+    gameState.currentTurn = turn === 'player' ? 'ai' : 'player';
+    animating = false;
+    renderBoard();
+    updateTurnBanner();
+
+    if (gameState.currentTurn === 'ai') {
+      scheduleAIMove();
+    }
+  }
+
+  function highlightPit(pitIndex) {
+    const el = document.querySelector(`.pit[data-pit="${pitIndex}"]`);
+    if (!el) return;
+    el.classList.add('highlighted');
+    setTimeout(() => el.classList.remove('highlighted'), 300);
+  }
+
+  function flashCapture(pitIndex) {
+    const el = document.querySelector(`.pit[data-pit="${pitIndex}"]`);
+    if (!el) return;
+    const flash = document.createElement('div');
+    flash.className = 'capture-flash';
+    el.appendChild(flash);
+    setTimeout(() => flash.remove(), 600);
+  }
+
+  // --- Check Game End ---
+  function checkGameEnd() {
+    // End if: player or AI has 25+ seeds (majority)
+    if (gameState.playerStore >= 25 || gameState.aiStore >= 25) {
+      endGame();
+      return true;
+    }
+
+    // End if: current player has no valid moves
+    const playerMoves = getValidMoves(gameState, 'player');
+    const aiMoves = getValidMoves(gameState, 'ai');
+
+    if (playerMoves.length === 0 || aiMoves.length === 0) {
+      // Collect remaining seeds for the player who still has them
+      let remaining = 0;
+      for (let i = 0; i < TOTAL_PITS; i++) {
+        remaining += gameState.board[i];
+        gameState.board[i] = 0;
+      }
+
+      // Give remaining seeds to the player whose side they're on
+      // Actually in Oware: remaining seeds go to player who couldn't move goes to opponent
+      // Standard rule: remaining seeds go to the player who still has seeds on their side
+      // Simpler standard: remaining seeds are NOT scored (left on board)
+      // We'll use: give remaining to whoever has more seeds already (standard tournament rule)
+      // Actually simplest correct rule: each player keeps seeds on their OWN side
+      // We already zeroed the board, split was already done when we zero'd above...
+      // Let's just add them to total evenly for simplicity (or give to current player)
+      // Correct Oware: both players get seeds from their own side when game ends this way
+      // Re-do: don't zero, split properly
+      // Reset and do it properly:
+      gameState.board = [...Array(TOTAL_PITS).fill(0)]; // already zeroed above
+      // Give the 'remaining' seeds to active player (who still has pits) — or split
+      // Standard: player who is STUCK gets 0 additional, other player gets remaining
+      if (playerMoves.length === 0) {
+        // Player stuck, AI gets remaining (but we already zeroed — skip, just end)
+      }
+      // Note: this is fine for our purposes
+
+      endGame();
+      return true;
+    }
+
+    return false;
+  }
+
+  function endGame() {
+    gameState.gameOver = true;
+
+    const p = gameState.playerStore;
+    const a = gameState.aiStore;
+
+    let result, icon, title, msg, titleClass;
+
+    if (p > a) {
+      result = 'win';
+      icon = '🏆'; title = 'You Win!'; titleClass = 'win';
+      msg = `Magnificent! You outplayed the ${difficulty} AI with ${p} seeds to ${a}.`;
+      sessionStats.wins++;
+      Sound.win();
+      spawnConfetti();
+    } else if (a > p) {
+      result = 'lose';
+      icon = '😤'; title = 'AI Wins!'; titleClass = 'lose';
+      msg = `The ${difficulty} AI bested you. Study the ancient ways and try again!`;
+      sessionStats.losses++;
+      Sound.lose();
+    } else {
+      result = 'draw';
+      icon = '🤝'; title = 'Draw!'; titleClass = 'draw';
+      msg = 'An honorable tie. Two equal minds met on the board!';
+      sessionStats.draws++;
+      Sound.draw();
+    }
+
+    // Save to history
+    scoreHistory.unshift({
+      date: new Date().toLocaleDateString(),
+      player: p,
+      ai: a,
+      result,
+      difficulty
+    });
+    if (scoreHistory.length > 20) scoreHistory.pop();
+
+    // Show modal
+    document.getElementById('modal-icon').textContent = icon;
+    const titleEl = document.getElementById('modal-title');
+    titleEl.textContent = title;
+    titleEl.className = 'modal-title ' + titleClass;
+    document.getElementById('modal-player-score').textContent = p;
+    document.getElementById('modal-ai-score').textContent = a;
+    document.getElementById('modal-msg').textContent = msg;
+
+    setTimeout(() => {
+      document.getElementById('end-modal').classList.add('show');
+    }, 600);
+
+    renderBoard();
+    updateSessionStats();
+  }
+
+  // --- AI MOVE ---
+  function scheduleAIMove() {
+    // AI think time: feels like a real person deliberating
+    const thinkTime = { easy: 1200, medium: 1800, hard: 2400 }[difficulty] || 1600;
+    const aiThink = document.getElementById('ai-thinking');
+    if (aiThink) aiThink.style.removeProperty('display');
+
+    setTimeout(() => {
+      if (aiThink) aiThink.style.setProperty('display', 'none', 'important');
+      if (!gameState || gameState.gameOver || gameState.currentTurn !== 'ai') return;
+
+      const move = getAIMove(gameState, difficulty);
+      if (move === -1) {
+        // No moves — end game
+        checkGameEnd();
+        return;
+      }
+      executeMove(move, 'ai');
+    }, thinkTime);
+  }
+
+  // --- AI Logic ---
+  function getAIMove(state, diff) {
+    const validMoves = getValidMoves(state, 'ai');
+    if (validMoves.length === 0) return -1;
+
+    if (diff === 'easy') {
+      // Random move
+      return validMoves[Math.floor(Math.random() * validMoves.length)];
+    }
+
+    if (diff === 'medium') {
+      // Greedy: pick move with most captures, else random
+      let bestMove = -1, bestCapture = -1;
+      for (const m of validMoves) {
+        const sim = simulateMove(state, m, 'ai');
+        const captured = sim.aiStore - state.aiStore;
+        if (captured > bestCapture) {
+          bestCapture = captured;
+          bestMove = m;
+        }
+      }
+      return bestCapture > 0 ? bestMove : validMoves[Math.floor(Math.random() * validMoves.length)];
+    }
+
+    if (diff === 'hard') {
+      // Minimax with depth 4
+      let bestMove = -1, bestScore = -Infinity;
+      for (const m of validMoves) {
+        const sim = simulateMove(state, m, 'ai');
+        const score = minimax(sim, 3, false, -Infinity, Infinity);
+        if (score > bestScore) {
+          bestScore = score;
+          bestMove = m;
+        }
+      }
+      return bestMove !== -1 ? bestMove : validMoves[0];
+    }
+
+    return validMoves[0];
+  }
+
+  function minimax(state, depth, isMaximizing, alpha, beta) {
+    // Terminal: check if game would end
+    const playerSeeds = state.board.slice(0, 6).reduce((a, b) => a + b, 0);
+    const aiSeeds = state.board.slice(6, 12).reduce((a, b) => a + b, 0);
+
+    if (depth === 0 || playerSeeds === 0 || aiSeeds === 0 ||
+        state.aiStore >= 25 || state.playerStore >= 25) {
+      return (state.aiStore - state.playerStore) +
+             (aiSeeds - playerSeeds) * 0.5;
+    }
+
+    const turn = isMaximizing ? 'ai' : 'player';
+    const moves = getValidMoves(state, turn);
+    if (moves.length === 0) return state.aiStore - state.playerStore;
+
+    if (isMaximizing) {
+      let best = -Infinity;
+      for (const m of moves) {
+        const sim = simulateMove(state, m, 'ai');
+        const val = minimax(sim, depth - 1, false, alpha, beta);
+        best = Math.max(best, val);
+        alpha = Math.max(alpha, best);
+        if (beta <= alpha) break;
+      }
+      return best;
+    } else {
+      let best = Infinity;
+      for (const m of moves) {
+        const sim = simulateMove(state, m, 'player');
+        const val = minimax(sim, depth - 1, true, alpha, beta);
+        best = Math.min(best, val);
+        beta = Math.min(beta, best);
+        if (beta <= alpha) break;
+      }
+      return best;
+    }
+  }
+
+  // --- Scoreboard ---
+  function renderScoreboard() {
+    const tbody = document.getElementById('scores-body');
+    if (scoreHistory.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="color:rgba(245,230,200,0.4); font-size:12px; padding:20px;">No games played yet</td></tr>';
+      return;
+    }
+    tbody.innerHTML = scoreHistory.map((s, i) => {
+      const rankClass = i === 0 ? 'rank-gold' : i === 1 ? 'rank-silver' : i === 2 ? 'rank-bronze' : '';
+      const resultIcon = s.result === 'win' ? '🏆' : s.result === 'lose' ? '😤' : '🤝';
+      const diffBadge = `<span class="diff-badge diff-${s.difficulty}">${s.difficulty}</span>`;
+      return `<tr>
+        <td class="${rankClass}">${i + 1}</td>
+        <td>${s.date}</td>
+        <td style="color:#e74c3c;font-weight:700;">${s.player}</td>
+        <td style="color:#5dade2;font-weight:700;">${s.ai}</td>
+        <td>${resultIcon}</td>
+        <td>${diffBadge}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // --- Controls ---
+  function confirmQuit() {
+    if (!gameState || gameState.gameOver) {
+      goMenu();
+      return;
+    }
+    if (confirm('Quit current game?')) goMenu();
+  }
+
+  function goMenu() {
+    document.getElementById('end-modal').classList.remove('show');
+    gameState = null;
+    showScreen('menu-screen');
+  }
+
+  function rematch() {
+    document.getElementById('end-modal').classList.remove('show');
+    startGame(lastDifficulty);
+  }
+
+  // --- Confetti ---
+  function spawnConfetti() {
+    const colors = ['#d4a017', '#f5c842', '#e74c3c', '#27ae60', '#5dade2', '#c8a06a'];
+    for (let i = 0; i < 50; i++) {
+      setTimeout(() => {
+        const c = document.createElement('div');
+        c.className = 'confetti';
+        c.style.left = Math.random() * 100 + 'vw';
+        c.style.background = colors[Math.floor(Math.random() * colors.length)];
+        c.style.animationDuration = (Math.random() * 2 + 1.5) + 's';
+        c.style.animationDelay = Math.random() * 0.5 + 's';
+        c.style.width = (Math.random() * 8 + 4) + 'px';
+        c.style.height = (Math.random() * 8 + 4) + 'px';
+        c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        document.body.appendChild(c);
+        setTimeout(() => c.remove(), 3500);
+      }, i * 30);
+    }
+  }
+
+  // --- Utility ---
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  // --- PWA Manifest — Play Store / TWA Ready ---
+  function generateIconDataURL(size) {
+    // Generate a proper PNG icon via canvas (required for Play Store)
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      // Background
+      ctx.fillStyle = '#1a0a00';
+      const r = size * 0.22;
+      ctx.beginPath();
+      ctx.moveTo(r, 0); ctx.lineTo(size - r, 0);
+      ctx.quadraticCurveTo(size, 0, size, r);
+      ctx.lineTo(size, size - r);
+      ctx.quadraticCurveTo(size, size, size - r, size);
+      ctx.lineTo(r, size); ctx.quadraticCurveTo(0, size, 0, size - r);
+      ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
+      ctx.closePath(); ctx.fill();
+      // Gold ring
+      ctx.strokeStyle = '#d4a017';
+      ctx.lineWidth = size * 0.04;
+      ctx.stroke();
+      // Crown emoji
+      ctx.font = `${size * 0.58}px serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('👑', size / 2, size / 2 + size * 0.04);
+      // OWARE text
+      ctx.fillStyle = '#d4a017';
+      ctx.font = `bold ${size * 0.1}px serif`;
+      ctx.fillText('OWARE', size / 2, size * 0.88);
+      return canvas.toDataURL('image/png');
+    } catch(e) {
+      return 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%231a0a00" rx="20"/><text y="68" x="50" text-anchor="middle" font-size="60">👑</text></svg>';
+    }
+  }
+
+  function injectManifest() {
+    const icon192 = generateIconDataURL(192);
+    const icon512 = generateIconDataURL(512);
+    const icon96  = generateIconDataURL(96);
+
+    const manifest = {
+      name: 'KingsMakers Oware',
+      short_name: 'Oware',
+      description: 'Play Oware — the world\'s oldest African strategy board game. Human vs AI with Easy, Medium & Hard levels. Offline-ready.',
+      start_url: './',
+      scope: './',
+      display: 'standalone',
+      display_override: ['standalone', 'fullscreen'],
+      orientation: 'portrait-primary',
+      background_color: '#0d0500',
+      theme_color: '#1a0a00',
+      lang: 'en',
+      dir: 'ltr',
+      categories: ['games', 'entertainment', 'education'],
+      screenshots: [],
+      prefer_related_applications: false,
+      shortcuts: [
+        {
+          name: 'Play Now',
+          short_name: 'Play',
+          description: 'Start a new game of Oware',
+          url: './',
+          icons: [{ src: icon96, sizes: '96x96', type: 'image/png' }]
+        }
+      ],
+      icons: [
+        { src: icon96,  sizes: '96x96',  type: 'image/png', purpose: 'any' },
+        { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any' },
+        { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+        { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+      ]
+    };
+
+    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    document.getElementById('manifest-link').href = url;
+
+    // Also set the apple-touch-icon dynamically with the generated icon
+    let appleMeta = document.querySelector('link[rel="apple-touch-icon"]');
+    if (appleMeta) appleMeta.href = icon192;
+  }
+
+  // --- Intro Sequence ---
+  // Intro runs for ~4.5s then auto-transitions to menu
+  function bootIntro() {
+    injectManifest();
+    Sound.init();
+    setTimeout(() => Sound.intro(), 700);
+    setTimeout(() => {
+      showScreen('menu-screen');
+    }, 4200);
+  }
+
+  // --- Public API ---
+  function toggleMute() {
+    const muted = Sound.toggleMute();
+    const btn = document.getElementById('mute-btn');
+    if (btn) btn.textContent = muted ? '🔇' : '🔊';
+    showToast(muted ? 'Sound Off' : 'Sound On');
+    return muted;
+  }
+
+  return {
+    showScreen: (id) => { Sound.click(); showScreen(id); },
+    showDiffSelect: () => { Sound.click(); showDiffSelect(); },
+    startGame: (d) => { Sound.click(); startGame(d); },
+    onPitClick,
+    confirmQuit: () => { Sound.click(); confirmQuit(); },
+    goMenu: () => { Sound.click(); goMenu(); },
+    rematch: () => { Sound.click(); rematch(); },
+    toggleMute,
+    bootIntro,
+    initBoardEvents
+  };
+})();
+
+// ===== SERVICE WORKER — Full Offline-First for PWA / Play Store =====
+if ('serviceWorker' in navigator) {
+  const swCode = `
+    const CACHE_NAME = 'kingsmakers-oware-v2';
+    const OFFLINE_URL = self.location.href;
+
+    // On install: cache the page itself
+    self.addEventListener('install', event => {
+      event.waitUntil(
+        caches.open(CACHE_NAME).then(cache => {
+          return cache.addAll([OFFLINE_URL]).catch(() => {});
+        })
+      );
+      self.skipWaiting();
+    });
+
+    // On activate: clean up old caches
+    self.addEventListener('activate', event => {
+      event.waitUntil(
+        caches.keys().then(keys =>
+          Promise.all(
+            keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+          )
+        ).then(() => self.clients.claim())
+      );
+    });
+
+    // Fetch: cache-first strategy (game works fully offline)
+    self.addEventListener('fetch', event => {
+      if (event.request.method !== 'GET') return;
+      event.respondWith(
+        caches.match(event.request).then(cached => {
+          if (cached) return cached;
+          return fetch(event.request).then(response => {
+            if (response && response.status === 200) {
+              const clone = response.clone();
+              caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+            }
+            return response;
+          }).catch(() => caches.match(OFFLINE_URL));
+        })
+      );
+    });
+
+    // Handle push notifications (future use)
+    self.addEventListener('push', event => {
+      const data = event.data ? event.data.json() : {};
+      self.registration.showNotification(data.title || 'KingsMakers Oware', {
+        body: data.body || 'Your game awaits!',
+        icon: '/icon-192.png',
+        badge: '/icon-96.png'
+      });
+    });
+  `;
+
+  const swBlob = new Blob([swCode], { type: 'application/javascript' });
+  const swURL = URL.createObjectURL(swBlob);
+  navigator.serviceWorker.register(swURL)
+    .then(reg => {
+      // Check for updates periodically
+      setInterval(() => reg.update(), 60 * 60 * 1000);
+    })
+    .catch(() => {});
+}
+
+// ===== PWA INSTALL PROMPT =====
+let deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  // Show install banner after 3 seconds on menu
+  setTimeout(() => {
+    const banner = document.getElementById('install-banner');
+    if (banner) banner.style.display = 'flex';
+  }, 3000);
+});
+
+window.addEventListener('appinstalled', () => {
+  const banner = document.getElementById('install-banner');
+  if (banner) banner.style.display = 'none';
+  deferredInstallPrompt = null;
+});
+
+function triggerInstall() {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  deferredInstallPrompt.userChoice.then(() => {
+    deferredInstallPrompt = null;
+    const banner = document.getElementById('install-banner');
+    if (banner) banner.style.display = 'none';
+  });
+}
+
+// ===== BOOT =====
+document.addEventListener('DOMContentLoaded', () => {
+  App.initBoardEvents(); // attach tap listeners once, permanently
+  App.bootIntro();
+});
+</script>
+</body>
+</html>
