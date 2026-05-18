@@ -30,11 +30,13 @@
 <meta name="twitter:title" content="KingsMakers Oware">
 <meta name="twitter:description" content="The ancient African strategy game — now on your phone.">
 
-<!-- Manifest link — filled by JS -->
-<link rel="manifest" href="#" id="manifest-link">
+<!-- Manifest — static file for PWABuilder/crawler -->
+<link rel="manifest" href="./manifest.json">
 
 <!-- iOS splash / icons (inline SVG crown) -->
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%231a0a00' rx='22'/><text y='78' x='50' text-anchor='middle' font-size='65'>👑</text></svg>">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
 
 <title>KingsMakers Oware — African Strategy Game</title>
 
@@ -2057,95 +2059,9 @@ const App = (function() {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  // --- PWA Manifest — Play Store / TWA Ready ---
-  function generateIconDataURL(size) {
-    // Generate a proper PNG icon via canvas (required for Play Store)
-    try {
-      const canvas = document.createElement('canvas');
-      canvas.width = size; canvas.height = size;
-      const ctx = canvas.getContext('2d');
-      // Background
-      ctx.fillStyle = '#1a0a00';
-      const r = size * 0.22;
-      ctx.beginPath();
-      ctx.moveTo(r, 0); ctx.lineTo(size - r, 0);
-      ctx.quadraticCurveTo(size, 0, size, r);
-      ctx.lineTo(size, size - r);
-      ctx.quadraticCurveTo(size, size, size - r, size);
-      ctx.lineTo(r, size); ctx.quadraticCurveTo(0, size, 0, size - r);
-      ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
-      ctx.closePath(); ctx.fill();
-      // Gold ring
-      ctx.strokeStyle = '#d4a017';
-      ctx.lineWidth = size * 0.04;
-      ctx.stroke();
-      // Crown emoji
-      ctx.font = `${size * 0.58}px serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('👑', size / 2, size / 2 + size * 0.04);
-      // OWARE text
-      ctx.fillStyle = '#d4a017';
-      ctx.font = `bold ${size * 0.1}px serif`;
-      ctx.fillText('OWARE', size / 2, size * 0.88);
-      return canvas.toDataURL('image/png');
-    } catch(e) {
-      return 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%231a0a00" rx="20"/><text y="68" x="50" text-anchor="middle" font-size="60">👑</text></svg>';
-    }
-  }
-
-  function injectManifest() {
-    const icon192 = generateIconDataURL(192);
-    const icon512 = generateIconDataURL(512);
-    const icon96  = generateIconDataURL(96);
-
-    const manifest = {
-      name: 'KingsMakers Oware',
-      short_name: 'Oware',
-      description: 'Play Oware — the world\'s oldest African strategy board game. Human vs AI with Easy, Medium & Hard levels. Offline-ready.',
-      start_url: './',
-      scope: './',
-      display: 'standalone',
-      display_override: ['standalone', 'fullscreen'],
-      orientation: 'portrait-primary',
-      background_color: '#0d0500',
-      theme_color: '#1a0a00',
-      lang: 'en',
-      dir: 'ltr',
-      categories: ['games', 'entertainment', 'education'],
-      screenshots: [],
-      prefer_related_applications: false,
-      shortcuts: [
-        {
-          name: 'Play Now',
-          short_name: 'Play',
-          description: 'Start a new game of Oware',
-          url: './',
-          icons: [{ src: icon96, sizes: '96x96', type: 'image/png' }]
-        }
-      ],
-      icons: [
-        { src: icon96,  sizes: '96x96',  type: 'image/png', purpose: 'any' },
-        { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any' },
-        { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any' },
-        { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'maskable' },
-        { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'maskable' }
-      ]
-    };
-
-    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    document.getElementById('manifest-link').href = url;
-
-    // Also set the apple-touch-icon dynamically with the generated icon
-    let appleMeta = document.querySelector('link[rel="apple-touch-icon"]');
-    if (appleMeta) appleMeta.href = icon192;
-  }
-
   // --- Intro Sequence ---
   // Intro runs for ~4.5s then auto-transitions to menu
   function bootIntro() {
-    injectManifest();
     Sound.init();
     setTimeout(() => Sound.intro(), 700);
     setTimeout(() => {
@@ -2176,69 +2092,14 @@ const App = (function() {
   };
 })();
 
-// ===== SERVICE WORKER — Full Offline-First for PWA / Play Store =====
+// ===== SERVICE WORKER — registers real static sw.js =====
 if ('serviceWorker' in navigator) {
-  const swCode = `
-    const CACHE_NAME = 'kingsmakers-oware-v2';
-    const OFFLINE_URL = self.location.href;
-
-    // On install: cache the page itself
-    self.addEventListener('install', event => {
-      event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => {
-          return cache.addAll([OFFLINE_URL]).catch(() => {});
-        })
-      );
-      self.skipWaiting();
-    });
-
-    // On activate: clean up old caches
-    self.addEventListener('activate', event => {
-      event.waitUntil(
-        caches.keys().then(keys =>
-          Promise.all(
-            keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-          )
-        ).then(() => self.clients.claim())
-      );
-    });
-
-    // Fetch: cache-first strategy (game works fully offline)
-    self.addEventListener('fetch', event => {
-      if (event.request.method !== 'GET') return;
-      event.respondWith(
-        caches.match(event.request).then(cached => {
-          if (cached) return cached;
-          return fetch(event.request).then(response => {
-            if (response && response.status === 200) {
-              const clone = response.clone();
-              caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-            }
-            return response;
-          }).catch(() => caches.match(OFFLINE_URL));
-        })
-      );
-    });
-
-    // Handle push notifications (future use)
-    self.addEventListener('push', event => {
-      const data = event.data ? event.data.json() : {};
-      self.registration.showNotification(data.title || 'KingsMakers Oware', {
-        body: data.body || 'Your game awaits!',
-        icon: '/icon-192.png',
-        badge: '/icon-96.png'
-      });
-    });
-  `;
-
-  const swBlob = new Blob([swCode], { type: 'application/javascript' });
-  const swURL = URL.createObjectURL(swBlob);
-  navigator.serviceWorker.register(swURL)
+  navigator.serviceWorker.register('./sw.js')
     .then(reg => {
-      // Check for updates periodically
+      console.log('SW registered:', reg.scope);
       setInterval(() => reg.update(), 60 * 60 * 1000);
     })
-    .catch(() => {});
+    .catch(err => console.log('SW registration failed:', err));
 }
 
 // ===== PWA INSTALL PROMPT =====
